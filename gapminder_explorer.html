@@ -113,6 +113,25 @@
   @media (max-width: 900px) {
     .charts { grid-template-columns: 1fr; }
   }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+  }
+  .legend .item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+  }
+  .legend .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+  }
   .chart-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -220,6 +239,8 @@
       <div class="stat"><div class="label">Avg Life Expectancy</div><div class="value" id="stat-life">–</div></div>
     </div>
 
+    <div class="legend" id="legend"></div>
+
     <div class="charts">
       <div class="chart-card">
         <h3 id="chart1-title">Life Expectancy by Country</h3>
@@ -248,7 +269,16 @@
 <script>
 (function () {
   const DATA_URL = "https://swcarpentry.github.io/r-novice-gapminder/data/gapminder_data.csv";
-  const PALETTE = ["#38bdf8","#f472b6","#facc15","#4ade80","#fb923c","#a78bfa","#f87171","#2dd4bf","#c084fc","#fb7185","#93c5fd","#fbbf24"];
+  // One color per continent
+  const CONT_COLORS = {
+    "Africa": "#f59e0b",
+    "Americas": "#22c55e",
+    "Asia": "#38bdf8",
+    "Europe": "#f472b6",
+    "Oceania": "#a78bfa"
+  };
+  const DEFAULT_COLOR = "#94a3b8";
+  const colorForContinent = (c) => CONT_COLORS[c] || DEFAULT_COLOR;
 
   let allData = [];
   let sortKey = "country";
@@ -351,17 +381,31 @@
     const life = [...records].sort((a, b) => b.lifeExp - a.lifeExp).slice(0, 30);
     const pop = [...records].sort((a, b) => b.population - a.population).slice(0, 30);
 
-    renderChart(chart1, life.map(r => r.country), life.map(r => r.lifeExp), "years");
-    renderChart(chart2, pop.map(r => r.country), pop.map(r => r.population), "millions");
+    renderChart(chart1, life.map(r => r.country), life.map(r => r.lifeExp), life.map(r => r.continent), "years");
+    renderChart(chart2, pop.map(r => r.country), pop.map(r => r.population), pop.map(r => r.continent), "millions");
 
     // Table
     $("table-title").textContent = "Summary Table — " + contLabel + ", " + rangeLabel + " (" + records.length + " countries)";
     renderTable(records);
   }
 
-  function renderChart(chart, labels, data, unit) {
+  function buildLegend() {
+    const legend = $("legend");
+    legend.innerHTML = "";
+    Object.entries(CONT_COLORS).forEach(([cont, color]) => {
+      const item = document.createElement("span");
+      item.className = "item";
+      const swatch = document.createElement("span");
+      swatch.className = "swatch";
+      swatch.style.background = color;
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(cont));
+      legend.appendChild(item);
+    });
+  }
+
+  function renderChart(chart, labels, data, continents, unit) {
     const isHoriz = labels.length > 12;
-    const color = unit === "years" ? "#38bdf8" : "#f472b6";
     const cfg = {
       type: "bar",
       data: {
@@ -369,8 +413,8 @@
         datasets: [{
           label: unit,
           data: data,
-          backgroundColor: data.map((_, i) => PALETTE[i % PALETTE.length] + "cc"),
-          borderColor: color,
+          backgroundColor: continents.map((c) => colorForContinent(c) + "cc"),
+          borderColor: continents.map((c) => colorForContinent(c)),
           borderWidth: 1
         }]
       },
@@ -469,6 +513,7 @@
 
       populateFilters();
       buildHead();
+      buildLegend();
 
       // create charts
       chart1 = new Chart($("chart1"), { type: "bar", data: { labels: [], datasets: [] }, options: {} });
