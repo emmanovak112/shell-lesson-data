@@ -449,8 +449,8 @@
 
   // ---- Setup ----
   function populateFilters() {
-    const continents = ["All", ...new Set(allData.map(d => d.continent)).sort()];
-    const years = ["All", ...new Set(allData.map(d => d.year)).sort((a, b) => a - b)];
+    const continents = ["All", ...[...new Set(allData.map(d => d.continent))].sort()];
+    const years = ["All", ...[...new Set(allData.map(d => d.year))].sort((a, b) => a - b)];
     const cSel = $("continent"), ySel = $("year");
     cSel.innerHTML = ""; ySel.innerHTML = "";
     continents.forEach(c => { const o = document.createElement("option"); o.value = c; o.textContent = c; cSel.appendChild(o); });
